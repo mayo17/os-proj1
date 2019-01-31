@@ -35,6 +35,10 @@
 *.i*86
 *.x86_64
 *.hex
+syscall
+context_switch
+test_cs
+test_cs.c
 
 # Debug files
 *.dSYM/
