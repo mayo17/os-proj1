@@ -33,20 +33,22 @@ int main() {
 		return 1;
 	}
 
-	//To set up the CPU selection and handle the error if the single CPU could not be set.
-	CPU_ZERO(&mask);
-	CPU_SET(0, &mask);
-
-	if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
-		perror("Error: Process could not be assigned to a CPU\n");
-		return 1;
-	}
-
-	f = fork(); //Initializes and runs the fork();
-
 	//Checks the conditions of the fork to determine if the program can run.
 	//If successful, runs either the parent process or the child process else, prints error.
-	//for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 5; i++) {
+		f = fork(); //Initializes and runs the fork();
+
+		//To set up the CPU selection and handle the error if the single CPU could not be set.
+		CPU_ZERO(&mask);
+		CPU_SET(0, &mask);
+
+		if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
+			perror("Error: Process could not be assigned to a CPU\n");
+			return 1;
+		}
+
+		//int cpu_id = CPU_ISSET(0, &mask);
+		//printf("%s\n", cpu_id);
 
 		if (f < 0) {
 			perror ("Could not run the fork\n");
@@ -76,8 +78,8 @@ int main() {
 			char* string;
 
 			//close(pA[1]);
-			//printf("In p2: ");
-			//printf("%d\n", i);
+			printf("In p2: ");
+			printf("%d\n", i);
 			read(pA[0], buffer, strlen(msg));
 
 			//close(pA[0]);
@@ -86,7 +88,7 @@ int main() {
 			write(pB[1], msg, strlen(msg));
 			//close(pB[1]);
 		}
-	//}
+	}
 
 return 0;
 }
