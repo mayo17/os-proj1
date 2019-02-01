@@ -37,8 +37,6 @@
 *.hex
 syscall
 context_switch
-test_cs
-test_cs.c
 
 # Debug files
 *.dSYM/
