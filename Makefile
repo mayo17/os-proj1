@@ -19,6 +19,6 @@ runcs: context_switch
 	./context_switch
 
 clean:
-	rm system_call
-	rm context_switch
-	rm *.o
+	rm -f system_call
+	rm -f context_switch
+	rm -f *.o
