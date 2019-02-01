@@ -16,7 +16,7 @@ int main()
     int fd2[2];  // Used to store two ends of second pipe
 
     char fixed_str[] = "forgeeks.org";
-    char input_str[100];
+    char input_str[100] = "hello";
     pid_t p;
 
     if (pipe(fd1)==-1)
@@ -30,7 +30,7 @@ int main()
         return 1;
     }
 
-    scanf("%s", input_str);
+    //scanf("%s", input_str);
     p = fork();
 
     if (p < 0)
@@ -59,7 +59,7 @@ int main()
         // Read string from child, print it and close
         // reading end.
         read(fd2[0], concat_str, 100);
-        printf("Concatenated string %s\n", concat_str);
+        printf("%s\n", concat_str);
         close(fd2[0]);
     }
 

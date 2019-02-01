@@ -39,6 +39,8 @@ syscall
 context_switch
 test_cs
 test_cs.c
+testfork
+testfork.c
 fork
 
 # Debug files
