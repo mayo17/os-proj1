@@ -4,18 +4,18 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sched.h>
 
 int main() {
-
   cpu_set_t mask;
   int pipe1[2];
   int pipe2[2];
   char* msg = "hello\n";
-  char buffer[strlen("hello\n")];
+  char buffer[strlen(msg)];
 
   //To set up the CPU selection and handle the error if the single CPU could not be set.
   CPU_ZERO(&mask);
@@ -28,31 +28,51 @@ int main() {
     return 1;
 
   }else if (f > 0) {  //Parent Process
-    if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
-      perror("Error: Process could not be assigned to a CPU\n");
-      return 1;
-    }
+    // if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
+    //   perror("Error: Process could not be assigned to a CPU\n");
+    //   return 1;
+    // }
+
+    char string[6];
 
     printf("In p1\n");
-	printf("Parent PID: %d\n", getpid());
-	//printf("%d\n", i);
-	wait(NULL);
-	write(pipe1[1], msg, strlen(msg));
-	read(pipe2[0], buffer, strlen(msg));
+	  printf("Parent PID: %d\n", getpid());
+	  //printf("%d\n", i);
+	  //write(pipe1[1], msg, strlen(msg));
+    //printf("here1\n");
+    close(pipe2[0]);
+    write(pipe2[1], msg, strlen(msg)+1);
+    close(pipe2[1]);
 
-  }else if (f == 0) { //Child Process
-    if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
-      perror("Error: Process could not be assigned to a CPU\n");
-      return 1;
-    }
+    wait(NULL);
+
+    close(pipe1[1]);
+	  read(pipe1[0], buffer, 1000);
+    close(pipe1[0]);
+    printf("%s no\n", buffer);
+    //exit(EXIT_SUCCESS);
+
+  }else { //Child Process
+    // if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
+    //   perror("Error: Process could not be assigned to a CPU\n");
+    //   return 1;
+    // }
 
     printf("In p2\n");
-	printf("Parent PID in Child: %d\n", getpid());
-	//printf("%d\n", i);
-	read(pipe1[0], buffer, strlen(msg));
-	write(pipe2[1], msg, strlen(msg));
+	  printf("Parent PID in Child: %d\n", getpid());
+	  //printf("%d\n", i);
+    //printf("here3\n");
+	  //read(pipe1[0], buffer, strlen(msg));
+    close(pipe2[1]);
 
-    exit(EXIT_SUCCESS);
+    char string[6];
+
+    read(pipe2[0], string, 1000);
+    close(pipe2[0]);
+    close(pipe1[0]);
+	  write(pipe1[1], string, strlen(string)+1);    
+    close(pipe1[1]);   
+    exit(0);
   }
 
   // switch (fork()) {
