@@ -6,6 +6,9 @@ Group Members: Jayce Houghton, Mark Yo
   To compile both files, use the following command
     > make
 
+  To clean all constructed files
+    > make clean
+
 system_call
   To compile and/or run system_call
     > make runsc
