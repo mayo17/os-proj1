@@ -19,7 +19,8 @@ int main()
   double startTime = 0;
   double Ellapsed = 0;
   double totalEllapsed = 0;
-  int sampleSize = 5;
+  int sampleSize = 100;
+  double writeTime = 0;
 
   //To set up the CPU selection and handle the error if the single CPU could not be set.
   //Force to a single CPU to force context switch between processes
@@ -42,7 +43,7 @@ int main()
   for(int i = 0; i < sampleSize; i++)
   {
     //Struct for timing item
-    struct timespec start, end;
+    struct timespec start, end, start2, end2;
 
     //Fork creation. Done in loop or else each loop would be using the same fork.
     int f = fork();
@@ -71,11 +72,15 @@ int main()
       startTime = start.tv_nsec;
 
       //Need to pipe the start time to the child process so that they can use it to get ellapsed time
+      clock_gettime(CLOCK_MONOTONIC, &start2);
       write(pipeTime[1], &startTime, sizeof(startTime));
+      clock_gettime(CLOCK_MONOTONIC, &end2);
+      writeTime = end2.tv_nsec - start2.tv_nsec;
       wait(NULL);
 
       //Reads in ellapsed time from the child and adds it to the total
       read(pipeMain[0], &Ellapsed, sizeof(Ellapsed));
+      Ellapsed = Ellapsed - writeTime;
       printf("Switch time: %f\n", Ellapsed);
       totalEllapsed += Ellapsed;
 
