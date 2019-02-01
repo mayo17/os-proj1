@@ -11,7 +11,7 @@
 #include <string.h>
 #include <sched.h>
 
-int main() 
+int main()
 {
   cpu_set_t mask;
   int pipeMain[2];
@@ -20,11 +20,6 @@ int main()
   double Ellapsed = 0;
   double totalEllapsed = 0;
   int sampleSize = 5;
-
-  //Message to be sent through the pipe
-  char msg[] = "Hello"; 
-  char buffer[strlen(msg)+1];
-  double timeBuffer[100];
 
   //To set up the CPU selection and handle the error if the single CPU could not be set.
   //Force to a single CPU to force context switch between processes
@@ -44,7 +39,7 @@ int main()
 	}
 
   //Fork loop to run context switch i times
-  for(int i = 0; i < sampleSize; i++) 
+  for(int i = 0; i < sampleSize; i++)
   {
     //Struct for timing item
     struct timespec start, end;
@@ -53,17 +48,17 @@ int main()
     int f = fork();
 
     //Error Processing
-    if (f < 0) 
+    if (f < 0)
     {
       perror ("Fork error\n");
       return 1;
 
     }
     //Parent Process
-    else if (f > 0) 
+    else if (f > 0)
     {
       //Makes sure process is on single same CPU as child process. Repeated in child.
-      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) 
+      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1)
       {
         perror("Error: Process could not be assigned to a CPU\n");
         return 1;
@@ -74,7 +69,7 @@ int main()
       //Wait for child to write something to the pipe. Force context switch. Start timer since this is here siwtch will happen
       clock_gettime(CLOCK_MONOTONIC, &start);
       startTime = start.tv_nsec;
-      
+
       //Need to pipe the start time to the child process so that they can use it to get ellapsed time
       write(pipeTime[1], &startTime, sizeof(startTime));
       wait(NULL);
@@ -83,7 +78,7 @@ int main()
       read(pipeMain[0], &Ellapsed, sizeof(Ellapsed));
       printf("Switch time: %f\n", Ellapsed);
       totalEllapsed += Ellapsed;
-      
+
       //Exits parent and prints results on last iteration
       if(i == sampleSize - 1)
       {
@@ -97,9 +92,9 @@ int main()
 
     }
     //Child Process
-    else 
+    else
     {
-      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) 
+      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1)
       {
         perror("Error: Process could not be assigned to a CPU\n");
         return 1;
