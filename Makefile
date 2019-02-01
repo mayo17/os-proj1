@@ -1,17 +1,21 @@
 make: system_call.o	context_switch.o
 
+system_call: system_call.o
+	gcc -Wall -o system_call system_call.o -lrt
+
 system_call.o: system_call.c
 	gcc -Wall -c system_call.c -lrt
-	gcc -Wall -o system_call system_call.o -lrt
+
+context_switch: context_switch.o
+	gcc -Wall -std=c99 -o context_switch context_switch.o -lrt
 
 context_switch.o: context_switch.c
 	gcc -Wall -std=c99 -c context_switch.c -lrt
-	gcc -Wall -std=c99 -o context_switch context_switch.o -lrt
 
-runsc: system_call.o
+runsc: system_call
 	./system_call
 
-runcs: context_switch.o
+runcs: context_switch
 	./context_switch
 
 clean:
