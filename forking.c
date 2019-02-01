@@ -12,6 +12,7 @@
 int main() {
 
   cpu_set_t mask;
+  int p[2];
 
   //To set up the CPU selection and handle the error if the single CPU could not be set.
   CPU_ZERO(&mask);
