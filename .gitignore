@@ -39,6 +39,7 @@ syscall
 context_switch
 test_cs
 test_cs.c
+fork
 
 # Debug files
 *.dSYM/
