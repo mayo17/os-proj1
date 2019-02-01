@@ -1,92 +1,125 @@
-//Program to measure the cost of context switch on a single cpu
-//Have to complile with -std=c99
-
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/prctl.h>
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
 #include <sched.h>
 
-int main() {
-	//unsigned long mask = 1;
-	cpu_set_t mask;
-	int pA[2];
-	int pB[2];
-	pid_t f;
-	char* msg = "hello\n";
-	char buffer[strlen("hello\n")];
+int main() 
+{
+  cpu_set_t mask;
+  int pipeMain[2];
+  int pipeTime[2];
+  double startTime = 0;
+  double Ellapsed = 0;
+  double totalEllapsed = 0;
+  int sampleSize = 5;
 
-	//To handle errors in creating the pipe to switch between processes.
-	if (pipe(pA) == -1)
+  //Message to be sent through the pipe
+  char msg[] = "Hello"; 
+  char buffer[strlen(msg)+1];
+  double timeBuffer[100];
+
+  //To set up the CPU selection and handle the error if the single CPU could not be set.
+  //Force to a single CPU to force context switch between processes
+  CPU_ZERO(&mask);
+  CPU_SET(0, &mask);
+
+  //To handle errors in creating the pipe to switch between processes and create the pipe.
+	if (pipe(pipeMain) == -1)
 	{
-		perror("Pipe A creation unsuccessful\n");
+		perror("Pipe error\n");
 		return 1;
 	}
-	if (pipe(pB) == -1)
+  if (pipe(pipeTime) == -1)
 	{
-		perror("Pipe B creation unsuccessful\n");
+		perror("Pipe error\n");
 		return 1;
 	}
 
-	//To set up the CPU selection and handle the error if the single CPU could not be set.
-	CPU_ZERO(&mask);
-	CPU_SET(0, &mask);
+  //Fork loop to run context switch i times
+  for(int i = 0; i < sampleSize; i++) 
+  {
+    //Struct for timing item
+    struct timespec start, end;
 
-	if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) {
-		perror("Error: Process could not be assigned to a CPU\n");
-		return 1;
-	}
+    //Fork creation. Done in loop or else each loop would be using the same fork.
+    int f = fork();
 
-	f = fork(); //Initializes and runs the fork();
+    //Error Processing
+    if (f < 0) 
+    {
+      perror ("Fork error\n");
+      return 1;
 
-	//Checks the conditions of the fork to determine if the program can run.
-	//If successful, runs either the parent process or the child process else, prints error.
-	//for (int i = 0; i < 6; i++) {
+    }
+    //Parent Process
+    else if (f > 0) 
+    {
+      //Makes sure process is on single same CPU as child process. Repeated in child.
+      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) 
+      {
+        perror("Error: Process could not be assigned to a CPU\n");
+        return 1;
+      }
 
-		if (f < 0) {
-			perror ("Could not run the fork\n");
-			return 1;
-		}else if (f > 0) {	//Parent Process
+      printf("In Parent: %d\n", getpid());
 
-			printf("Parent PID: %d\n", getpid());	//DEBUG GING
+      //Wait for child to write something to the pipe. Force context switch. Start timer since this is here siwtch will happen
+      clock_gettime(CLOCK_MONOTONIC, &start);
+      startTime = start.tv_nsec;
+      
+      //Need to pipe the start time to the child process so that they can use it to get ellapsed time
+      write(pipeTime[1], &startTime, sizeof(startTime));
+      wait(NULL);
 
-			char* string;
+      //Reads in ellapsed time from the child and adds it to the total
+      read(pipeMain[0], &Ellapsed, sizeof(Ellapsed));
+      printf("Switch time: %f\n", Ellapsed);
+      totalEllapsed += Ellapsed;
+      
+      //Exits parent and prints results on last iteration
+      if(i == sampleSize - 1)
+      {
+        printf("Total Ellapsed Nano: %f\n", totalEllapsed);
+        double totalTimeMilli = totalEllapsed/1000000;
+        printf("Total Ellapsed Milli: %f\n", totalTimeMilli);
+        double avgTimeMilli = totalTimeMilli/sampleSize;
+        printf("Average Time Milii: %f\n", avgTimeMilli);
+        exit(0);
+      }
 
-			close(pA[0]);
-			printf("In p1: ");
-			printf("%d\n", i);
-			write(pA[1], msg, strlen(msg));
-			close(pA[1]);
+    }
+    //Child Process
+    else 
+    {
+      if ((sched_setaffinity(getpid(), sizeof(mask), &mask)) == -1) 
+      {
+        perror("Error: Process could not be assigned to a CPU\n");
+        return 1;
+      }
 
-			wait(NULL);
+      //Ends the timer as soon as context is switched from parent to child
+      clock_gettime(CLOCK_MONOTONIC, &end);
 
-			close(pB[1]);
-			read(pB[0], buffer, strlen(msg));
-			close(pB[0]);
-		}else if (f = 0) {	//Child Process
+      //Reads the start time from the parent
+      read(pipeTime[0], &startTime, sizeof(startTime));
+      double endTime = end.tv_nsec;
+      Ellapsed = endTime - startTime;
+      printf("In Child: %d\n", getpid());
 
-			printf("Child PID: ");	//DEBUG GING
-			printf("%d\n", getpid());
+      //Pipes the Ellapsed time back to the parent process then exits the child process
+      write(pipeMain[1], &Ellapsed, sizeof(Ellapsed));
+      exit(0);
+    }
+  }
 
-			char* string;
+  return 0;
 
-			//close(pA[1]);
-			//printf("In p2: ");
-			//printf("%d\n", i);
-			read(pA[0], buffer, strlen(msg));
-
-			//close(pA[0]);
-			//close(pB[0]);
-
-			write(pB[1], msg, strlen(msg));
-			//close(pB[1]);
-		}
-	//}
-
-return 0;
 }
